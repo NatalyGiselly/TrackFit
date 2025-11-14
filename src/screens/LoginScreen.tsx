@@ -28,11 +28,13 @@ type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, '
 
 export const LoginScreen: React.FC = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const {signIn} = useAuth();
+  const {signIn, signInWithApple, signInWithGoogle} = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   async function handleLogin() {
     if (!email || !password) {
@@ -47,6 +49,28 @@ export const LoginScreen: React.FC = () => {
       Alert.alert('Erro', error instanceof Error ? error.message : 'Erro ao fazer login');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleAppleLogin() {
+    try {
+      setAppleLoading(true);
+      await signInWithApple();
+    } catch (error) {
+      Alert.alert('Erro', error instanceof Error ? error.message : 'Erro ao fazer login com Apple');
+    } finally {
+      setAppleLoading(false);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    try {
+      setGoogleLoading(true);
+      await signInWithGoogle();
+    } catch (error) {
+      Alert.alert('Erro', error instanceof Error ? error.message : 'Erro ao fazer login com Google');
+    } finally {
+      setGoogleLoading(false);
     }
   }
 
@@ -136,17 +160,31 @@ export const LoginScreen: React.FC = () => {
 
           {/* Social Login Buttons */}
           <View style={styles.socialButtonsContainer}>
-            <TouchableOpacity style={styles.socialButton}>
-              <View style={styles.socialButtonContent}>
-                <AppleLogo width={18} height={22} />
-                <Text style={styles.socialButtonText}>Apple</Text>
-              </View>
+            <TouchableOpacity
+              style={[styles.socialButton, appleLoading && styles.buttonDisabled]}
+              onPress={handleAppleLogin}
+              disabled={appleLoading || googleLoading || loading}>
+              {appleLoading ? (
+                <ActivityIndicator color="#1a1a1a" />
+              ) : (
+                <View style={styles.socialButtonContent}>
+                  <AppleLogo width={18} height={22} />
+                  <Text style={styles.socialButtonText}>Apple</Text>
+                </View>
+              )}
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
-              <View style={styles.socialButtonContent}>
-                <GoogleLogo width={20} height={20} />
-                <Text style={styles.socialButtonText}>Google</Text>
-              </View>
+            <TouchableOpacity
+              style={[styles.socialButton, googleLoading && styles.buttonDisabled]}
+              onPress={handleGoogleLogin}
+              disabled={appleLoading || googleLoading || loading}>
+              {googleLoading ? (
+                <ActivityIndicator color="#1a1a1a" />
+              ) : (
+                <View style={styles.socialButtonContent}>
+                  <GoogleLogo width={20} height={20} />
+                  <Text style={styles.socialButtonText}>Google</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
 

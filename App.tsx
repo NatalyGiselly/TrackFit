@@ -9,6 +9,7 @@ import React from 'react';
 import {StatusBar, useColorScheme} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {AuthProvider} from './src/context/AuthContext';
+import {LoadingProvider} from './src/context/LoadingContext';
 import {AppNavigator} from './src/navigation/AppNavigator';
 
 function App(): React.JSX.Element {
@@ -20,9 +21,11 @@ function App(): React.JSX.Element {
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor="#FFFFFF"
       />
-      <AuthProvider>
-        <AppNavigator />
-      </AuthProvider>
+      <LoadingProvider>
+        <AuthProvider>
+          <AppNavigator />
+        </AuthProvider>
+      </LoadingProvider>
     </SafeAreaProvider>
   );
 }

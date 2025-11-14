@@ -1,6 +1,12 @@
-import React, {createContext, useState, useEffect, useContext, ReactNode} from 'react';
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  ReactNode,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {User, AuthContextData} from '../types/auth';
+import { User, AuthContextData } from '../types/auth';
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
@@ -8,7 +14,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -18,6 +24,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
   }, []);
 
   async function loadStorageData(): Promise<void> {
+    const startTime = Date.now();
+    const MIN_LOADING_TIME = 1000; // 1 second minimum
+
     try {
       const storedUser = await AsyncStorage.getItem('@TrackFit:user');
       if (storedUser) {
@@ -26,6 +35,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     } catch (error) {
       console.error('Error loading user data:', error);
     } finally {
+      // Ensure minimum loading time of 1 second
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = MIN_LOADING_TIME - elapsedTime;
+
+      if (remainingTime > 0) {
+        await new Promise<void>(resolve => setTimeout(() => resolve(), remainingTime));
+      }
+
       setLoading(false);
     }
   }
@@ -38,7 +55,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       const users = storedUsers ? JSON.parse(storedUsers) : [];
 
       const foundUser = users.find(
-        (u: User & {password: string}) => u.email === email && u.password === password
+        (u: User & { password: string }) =>
+          u.email === email && u.password === password,
       );
 
       if (!foundUser) {
@@ -47,16 +65,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
       // Remove password from user object before storing
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const {password: _, ...userWithoutPassword} = foundUser;
+      const { password: _, ...userWithoutPassword } = foundUser;
 
-      await AsyncStorage.setItem('@TrackFit:user', JSON.stringify(userWithoutPassword));
+      await AsyncStorage.setItem(
+        '@TrackFit:user',
+        JSON.stringify(userWithoutPassword),
+      );
       setUser(userWithoutPassword);
     } catch (error) {
       throw error;
     }
   }
 
-  async function signUp(name: string, email: string, password: string): Promise<void> {
+  async function signUp(
+    name: string,
+    email: string,
+    password: string,
+  ): Promise<void> {
     try {
       // TODO: Replace with real API call
       // For now, store user data locally
@@ -69,7 +94,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         throw new Error('Este email já está cadastrado');
       }
 
-      const newUser: User & {password: string} = {
+      const newUser: User & { password: string } = {
         id: Date.now().toString(),
         name,
         email,
@@ -82,8 +107,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
       // Auto login after signup
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const {password: _, ...userWithoutPassword} = newUser;
-      await AsyncStorage.setItem('@TrackFit:user', JSON.stringify(userWithoutPassword));
+      const { password: _, ...userWithoutPassword } = newUser;
+      await AsyncStorage.setItem(
+        '@TrackFit:user',
+        JSON.stringify(userWithoutPassword),
+      );
       setUser(userWithoutPassword);
     } catch (error) {
       throw error;
@@ -99,8 +127,54 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     }
   }
 
+  function createMockSocialUser(provider: 'apple' | 'google'): User {
+    // Your implementation here
+    return {
+      id: '1111',
+      name: provider === 'apple' ? 'Apple User' : 'Google User',
+      email: 'usuario@' + provider + '.com',
+      createdAt: new Date(),
+    };
+  }
+
+  async function signInWithApple(): Promise<void> {
+    try {
+      // Simulate network delay
+      await new Promise<void>(resolve => setTimeout(() => resolve(), 500));
+
+      const mockUser = createMockSocialUser('apple');
+      await AsyncStorage.setItem('@TrackFit:user', JSON.stringify(mockUser));
+      setUser(mockUser);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async function signInWithGoogle(): Promise<void> {
+    try {
+      // Simulate network delay
+      await new Promise<void>(resolve => setTimeout(() => resolve(), 500));
+
+      const mockUser = createMockSocialUser('google');
+      await AsyncStorage.setItem('@TrackFit:user', JSON.stringify(mockUser));
+      setUser(mockUser);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{user, loading, signIn, signUp, signOut}}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        signIn,
+        signUp,
+        signOut,
+        signInWithApple,
+        signInWithGoogle,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
