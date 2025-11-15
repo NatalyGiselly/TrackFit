@@ -18,6 +18,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper function to update active days streak
+  function updateActiveDays(currentUser: User): User {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const lastAccess = currentUser.lastAccessDate?.split('T')[0];
+
+    if (lastAccess === today) {
+      // Same day, no change
+      return currentUser;
+    }
+
+    const lastDate = new Date(lastAccess || today);
+    const todayDate = new Date(today);
+    const diffTime = todayDate.getTime() - lastDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) {
+      // Consecutive day - increment streak
+      return {
+        ...currentUser,
+        activeDays: currentUser.activeDays + 1,
+        lastAccessDate: new Date().toISOString(),
+      };
+    } else if (diffDays > 1) {
+      // Streak broken - reset to 1
+      return {
+        ...currentUser,
+        activeDays: 1,
+        lastAccessDate: new Date().toISOString(),
+      };
+    }
+
+    return currentUser;
+  }
+
   // Load user data from AsyncStorage on app start
   useEffect(() => {
     loadStorageData();
@@ -30,7 +64,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const storedUser = await AsyncStorage.getItem('@TrackFit:user');
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        let parsedUser: User = JSON.parse(storedUser);
+
+        // Update active days streak
+        parsedUser = updateActiveDays(parsedUser);
+
+        // Save updated user back to storage
+        await AsyncStorage.setItem('@TrackFit:user', JSON.stringify(parsedUser));
+
+        setUser(parsedUser);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -79,6 +121,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   async function signUp(
     name: string,
+    username: string,
     email: string,
     password: string,
   ): Promise<void> {
@@ -94,12 +137,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('Este email já está cadastrado');
       }
 
+      // Check if username already exists
+      const usernameExists = users.some((u: User) => u.username === username);
+      if (usernameExists) {
+        throw new Error('Este nome de usuário já está em uso');
+      }
+
       const newUser: User & { password: string } = {
         id: Date.now().toString(),
         name,
+        username,
         email,
         password, // In production, never store plain passwords!
         createdAt: new Date(),
+        activeDays: 1, // First day
+        lastAccessDate: new Date().toISOString(),
       };
 
       users.push(newUser);
@@ -132,8 +184,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return {
       id: '1111',
       name: provider === 'apple' ? 'Apple User' : 'Google User',
+      username: provider === 'apple' ? 'apple_user' : 'google_user',
       email: 'usuario@' + provider + '.com',
       createdAt: new Date(),
+      activeDays: 1,
+      lastAccessDate: new Date().toISOString(),
     };
   }
 

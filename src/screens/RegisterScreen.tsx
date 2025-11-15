@@ -23,6 +23,7 @@ export const RegisterScreen: React.FC = () => {
   const {signUp} = useAuth();
 
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -30,12 +31,16 @@ export const RegisterScreen: React.FC = () => {
 
   function validateForm(): {isValid: boolean; error?: string} {
     // Basic validations
-    if (!name.trim() || !email.trim() || !password || !confirmPassword) {
+    if (!name.trim() || !username.trim() || !email.trim() || !password || !confirmPassword) {
       return {isValid: false, error: 'Por favor, preencha todos os campos'};
     }
 
     if (name.trim().length < 3) {
       return {isValid: false, error: 'Nome deve ter pelo menos 3 caracteres'};
+    }
+
+    if (username.trim().length < 3) {
+      return {isValid: false, error: 'Nome de usuário deve ter pelo menos 3 caracteres'};
     }
 
     // Email validation
@@ -74,7 +79,7 @@ export const RegisterScreen: React.FC = () => {
 
     try {
       setLoading(true);
-      await signUp(name.trim(), email.trim().toLowerCase(), password);
+      await signUp(name.trim(), username.trim(), email.trim().toLowerCase(), password);
       // Navigation will happen automatically when user state changes
     } catch (error) {
       Alert.alert('Erro', error instanceof Error ? error.message : 'Erro ao criar conta');
@@ -110,6 +115,19 @@ export const RegisterScreen: React.FC = () => {
                 value={name}
                 onChangeText={setName}
                 autoCapitalize="words"
+                editable={!loading}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Nome de usuário</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="joao_silva ou João S"
+                placeholderTextColor="#999"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
                 editable={!loading}
               />
             </View>

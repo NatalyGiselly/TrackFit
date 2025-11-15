@@ -11,6 +11,7 @@ import {LoginScreen} from '../screens/LoginScreen';
 import {RegisterScreen} from '../screens/RegisterScreen';
 import {ForgotPasswordScreen} from '../screens/ForgotPasswordScreen';
 import {HomeScreen} from '../screens/HomeScreen';
+import {AccountScreen} from '../screens/AccountScreen';
 import {SplashScreen} from '../screens/SplashScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -35,6 +36,13 @@ export const AppNavigator: React.FC = () => {
               animation: 'fade',
             }}>
             <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen
+              name="Account"
+              component={AccountScreen}
+              options={{
+                animation: 'slide_from_right',
+              }}
+            />
           </Stack.Navigator>
         ) : (
           // User is NOT authenticated - Show Auth screens
