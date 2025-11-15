@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   useColorScheme,
   Alert,
+  TextInput,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
@@ -38,6 +39,8 @@ export const HomeScreen: React.FC = () => {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [expandedSubcategory, setExpandedSubcategory] = useState<string | null>(null);
   const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
+  const [customWorkouts, setCustomWorkouts] = useState<Array<{id: string; name: string; selected: boolean}>>([]);
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null);
 
   // Mock user progress data (will be replaced with real data later)
   const [workoutCount] = useState(12);
@@ -349,6 +352,35 @@ export const HomeScreen: React.FC = () => {
     navigation.navigate('WorkoutExecution', {exercises: selectedExercises});
   };
 
+  const handleAddCustomWorkout = () => {
+    const newWorkout = {
+      id: Date.now().toString(),
+      name: '',
+      selected: true,
+    };
+
+    setCustomWorkouts(prev => [...prev, newWorkout]);
+    setSelectedWorkoutId(newWorkout.id);
+  };
+
+  const handleWorkoutNameChange = (id: string, name: string) => {
+    setCustomWorkouts(prev =>
+      prev.map(workout =>
+        workout.id === id ? {...workout, name} : workout
+      )
+    );
+  };
+
+  const handleSelectWorkout = (id: string) => {
+    setSelectedWorkoutId(id);
+    setCustomWorkouts(prev =>
+      prev.map(workout => ({
+        ...workout,
+        selected: workout.id === id,
+      }))
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.container, {backgroundColor}]}>
       <ScrollView
@@ -414,7 +446,7 @@ export const HomeScreen: React.FC = () => {
 
         {/* Progress Section */}
         <View style={[styles.section, {backgroundColor: sectionBg}]}>
-          <Text style={[styles.sectionTitle, {color: textColor}]}>
+          <Text style={[styles.sectionTitle, {color: textColor, marginTop: 8, marginBottom: 20, textAlign: 'center'}]}>
             Seu Progresso, {user?.username || 'Usuário'}
           </Text>
           <View style={[styles.progressBox, {backgroundColor: progressBoxBg}]}>
@@ -492,6 +524,44 @@ export const HomeScreen: React.FC = () => {
               selectedExercises={selectedExercises}
               onExerciseToggle={handleExerciseToggle}
             />
+
+            {/* Botão Adicione seu treino */}
+            <TouchableOpacity
+              style={[styles.addWorkoutButton, {backgroundColor: isDark ? '#2a2a2a' : '#fff'}]}
+              onPress={handleAddCustomWorkout}
+              activeOpacity={0.7}>
+              <View style={styles.addWorkoutContent}>
+                <View style={[styles.plusCircle, {backgroundColor: '#52A0D8'}]}>
+                  <Text style={styles.plusIcon}>+</Text>
+                </View>
+                <Text style={[styles.addWorkoutText, {color: textColor}]}>
+                  Adicionar exercicio
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Lista de treinos customizados */}
+            {customWorkouts.map((workout) => (
+              <View key={workout.id} style={[styles.customWorkoutRow, {backgroundColor: isDark ? '#2a2a2a' : '#fff'}]}>
+                <TouchableOpacity
+                  onPress={() => handleSelectWorkout(workout.id)}
+                  activeOpacity={0.7}
+                  style={styles.radioButton}>
+                  <View style={[styles.radioOuter, {borderColor: '#52A0D8'}]}>
+                    {workout.selected && (
+                      <View style={[styles.radioInner, {backgroundColor: '#52A0D8'}]} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+                <TextInput
+                  style={[styles.workoutInput, {color: textColor, borderColor: isDark ? '#444' : '#ddd'}]}
+                  placeholder="Nome do exercicio"
+                  placeholderTextColor={isDark ? '#666' : '#999'}
+                  value={workout.name}
+                  onChangeText={(text) => handleWorkoutNameChange(workout.id, text)}
+                />
+              </View>
+            ))}
           </View>
         </View>
       </ScrollView>
@@ -524,6 +594,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 120,
   },
   header: {
     flexDirection: 'row',
@@ -591,9 +662,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    marginTop: 8,
-    marginBottom: 20,
-    textAlign: 'center',
   },
   progressBox: {
     borderRadius: 12,
@@ -656,5 +724,76 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
+  },
+  addWorkoutButton: {
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  addWorkoutContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  plusCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  plusIcon: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#fff',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  addWorkoutText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  customWorkoutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  radioButton: {
+    padding: 4,
+  },
+  radioOuter: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  workoutInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderRadius: 8,
   },
 });
