@@ -10,16 +10,16 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
-  Image,
   Dimensions,
 } from 'react-native';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const LOGO_SIZE = SCREEN_WIDTH * 0.35; // 35% da largura da tela
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../types/navigation';
-import {useAuth} from '../context/AuthContext';
+import {useAuth} from '../hooks/use-auth';
+import {useFormValidation} from '../hooks/use-form-validation';
+import {useLoadingStore} from '../stores/loading-store';
 import Logo from '../../assets/images/logo.svg';
 import {AppleLogo} from '../components/AppleLogo';
 import {GoogleLogo} from '../components/GoogleLogo';
@@ -29,12 +29,16 @@ type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, '
 export const LoginScreen: React.FC = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const {signIn, signInWithApple, signInWithGoogle} = useAuth();
+  const {errors, validateEmail, validatePassword, clearError} = useFormValidation();
+
+  const isSigningIn = useLoadingStore((state) => state.operationLoading.signIn || false);
+  const isAppleLoading = useLoadingStore((state) => state.operationLoading.signInWithApple || false);
+  const isGoogleLoading = useLoadingStore((state) => state.operationLoading.signInWithGoogle || false);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [appleLoading, setAppleLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const isAnyLoading = isSigningIn || isAppleLoading || isGoogleLoading;
 
   async function handleLogin() {
     if (!email || !password) {
@@ -42,35 +46,33 @@ export const LoginScreen: React.FC = () => {
       return;
     }
 
+    const emailValid = validateEmail(email);
+    const passwordValid = validatePassword(password);
+
+    if (!emailValid || !passwordValid) {
+      return;
+    }
+
     try {
-      setLoading(true);
       await signIn(email, password);
     } catch (error) {
       Alert.alert('Erro', error instanceof Error ? error.message : 'Erro ao fazer login');
-    } finally {
-      setLoading(false);
     }
   }
 
   async function handleAppleLogin() {
     try {
-      setAppleLoading(true);
       await signInWithApple();
     } catch (error) {
       Alert.alert('Erro', error instanceof Error ? error.message : 'Erro ao fazer login com Apple');
-    } finally {
-      setAppleLoading(false);
     }
   }
 
   async function handleGoogleLogin() {
     try {
-      setGoogleLoading(true);
       await signInWithGoogle();
     } catch (error) {
       Alert.alert('Erro', error instanceof Error ? error.message : 'Erro ao fazer login com Google');
-    } finally {
-      setGoogleLoading(false);
     }
   }
 
@@ -103,47 +105,55 @@ export const LoginScreen: React.FC = () => {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, errors.email && styles.inputError]}
                 placeholder="seu@email.com"
                 placeholderTextColor="#999"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) clearError('email');
+                }}
                 autoCapitalize="none"
                 keyboardType="email-address"
-                editable={!loading}
+                editable={!isAnyLoading}
                 autoComplete="email"
               />
+              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
             </View>
 
             {/* Password Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Senha</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, errors.password && styles.inputError]}
                 placeholder="••••••••"
                 placeholderTextColor="#999"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password) clearError('password');
+                }}
                 secureTextEntry
-                editable={!loading}
+                editable={!isAnyLoading}
                 autoComplete="password"
               />
+              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
             </View>
 
             {/* Forgot Password Link */}
             <TouchableOpacity
               style={styles.forgotPasswordContainer}
               onPress={() => navigation.navigate('ForgotPassword')}
-              disabled={loading}>
+              disabled={isAnyLoading}>
               <Text style={styles.forgotPasswordText}>Esqueci minha senha</Text>
             </TouchableOpacity>
 
             {/* Login Button */}
             <TouchableOpacity
-              style={[styles.loginButton, loading && styles.buttonDisabled]}
+              style={[styles.loginButton, isSigningIn && styles.buttonDisabled]}
               onPress={handleLogin}
-              disabled={loading}>
-              {loading ? (
+              disabled={isSigningIn}>
+              {isSigningIn ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.loginButtonText}>Entrar</Text>
@@ -161,10 +171,10 @@ export const LoginScreen: React.FC = () => {
           {/* Social Login Buttons */}
           <View style={styles.socialButtonsContainer}>
             <TouchableOpacity
-              style={[styles.socialButton, appleLoading && styles.buttonDisabled]}
+              style={[styles.socialButton, isAppleLoading && styles.buttonDisabled]}
               onPress={handleAppleLogin}
-              disabled={appleLoading || googleLoading || loading}>
-              {appleLoading ? (
+              disabled={isAnyLoading}>
+              {isAppleLoading ? (
                 <ActivityIndicator color="#1a1a1a" />
               ) : (
                 <View style={styles.socialButtonContent}>
@@ -174,10 +184,10 @@ export const LoginScreen: React.FC = () => {
               )}
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.socialButton, googleLoading && styles.buttonDisabled]}
+              style={[styles.socialButton, isGoogleLoading && styles.buttonDisabled]}
               onPress={handleGoogleLogin}
-              disabled={appleLoading || googleLoading || loading}>
-              {googleLoading ? (
+              disabled={isAnyLoading}>
+              {isGoogleLoading ? (
                 <ActivityIndicator color="#1a1a1a" />
               ) : (
                 <View style={styles.socialButtonContent}>
@@ -193,7 +203,7 @@ export const LoginScreen: React.FC = () => {
             <Text style={styles.createAccountText}>Não tem uma conta? </Text>
             <TouchableOpacity
               onPress={() => navigation.navigate('Register')}
-              disabled={loading}>
+              disabled={isAnyLoading}>
               <Text style={styles.createAccountLink}>Criar conta</Text>
             </TouchableOpacity>
           </View>
@@ -306,6 +316,16 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     borderWidth: 1,
     borderColor: '#E0E0E0',
+  },
+  inputError: {
+    borderColor: '#d32f2f',
+    borderWidth: 1.5,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#d32f2f',
+    marginTop: 4,
+    marginLeft: 4,
   },
   forgotPasswordContainer: {
     alignSelf: 'flex-end',

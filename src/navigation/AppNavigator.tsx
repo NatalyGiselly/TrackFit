@@ -1,10 +1,8 @@
 import React from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {StyleSheet, View} from 'react-native';
 import {RootStackParamList} from '../types/navigation';
-import {useAuth} from '../context/AuthContext';
-import {useLoading} from '../context/LoadingContext';
+import {useAuth} from '../hooks/use-auth';
 
 // Import Screens
 import {LoginScreen} from '../screens/LoginScreen';
@@ -18,11 +16,9 @@ import {SplashScreen} from '../screens/SplashScreen';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const AppNavigator: React.FC = () => {
-  const {user, loading} = useAuth();
-  const {isLoading} = useLoading();
+  const {user, isInitializing} = useAuth();
 
-  // Show splash screen while checking authentication status
-  if (loading) {
+  if (isInitializing) {
     return <SplashScreen />;
   }
 
@@ -77,24 +73,6 @@ export const AppNavigator: React.FC = () => {
           </Stack.Navigator>
         )}
       </NavigationContainer>
-
-      {/* Global loading overlay for important transitions */}
-      {isLoading && (
-        <View style={styles.loadingOverlay}>
-          <SplashScreen />
-        </View>
-      )}
     </>
   );
 };
-
-const styles = StyleSheet.create({
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 9999,
-  },
-});

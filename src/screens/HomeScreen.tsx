@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,17 +9,18 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {useNavigation} from '@react-navigation/native';
-import {RootStackParamList} from '../types/navigation';
-import {useAuth} from '../context/AuthContext';
-import {FlameCounter} from '../components/FlameCounter';
-import {ProgressTimeline} from '../components/ProgressTimeline';
-import {CategoryButton} from '../components/CategoryButton';
-import {MenuModal} from '../components/MenuModal';
-import {ExerciseIcon} from '../components/ExerciseIcon';
-import {FloatingActionBar} from '../components/FloatingActionBar';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
+import { RootStackParamList } from '../types/navigation';
+import { useAuth } from '../hooks/use-auth';
+import { useUserStore } from '../stores/user-store';
+import { FlameCounter } from '../components/FlameCounter';
+import { ProgressTimeline } from '../components/ProgressTimeline';
+import { CategoryButton } from '../components/CategoryButton';
+import { MenuModal } from '../components/MenuModal';
+import { ExerciseIcon } from '../components/ExerciseIcon';
+import { FloatingActionBar } from '../components/FloatingActionBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
@@ -29,26 +30,28 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<
 
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const {user, signOut} = useAuth();
+  const { user, signOut } = useAuth();
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? 'dark' : 'light';
   const isDark = theme === 'dark';
 
   const [menuVisible, setMenuVisible] = useState(false);
-  const [testActiveDays, setTestActiveDays] = useState(2);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
-  const [expandedSubcategory, setExpandedSubcategory] = useState<string | null>(null);
+  const [expandedSubcategory, setExpandedSubcategory] = useState<string | null>(
+    null,
+  );
   const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
-  const [customWorkouts, setCustomWorkouts] = useState<Array<{id: string; name: string; selected: boolean}>>([]);
-  const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null);
+  const [customWorkouts, setCustomWorkouts] = useState<
+    Array<{ id: string; name: string; selected: boolean }>
+  >([]);
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(
+    null,
+  );
 
-  // Mock user progress data (will be replaced with real data later)
-  const [workoutCount] = useState(12);
-  const [calories] = useState(2450);
-  const [minutes] = useState(240);
-
-  // Get active days from user - TESTE: usando estado de teste
-  const activeDays = testActiveDays;
+  const activeDays = useUserStore(state => state.activeDays);
+  const workoutCount = useUserStore(state => state.workoutCount);
+  const calories = useUserStore(state => state.calories);
+  const minutes = useUserStore(state => state.minutes);
 
   // Subcategorias para cada categoria principal
   const categorySubcategories = {
@@ -59,9 +62,9 @@ export const HomeScreen: React.FC = () => {
   };
 
   // Exercícios para cada subcategoria
-  const exercisesBySubcategory: {[key: string]: string[]} = {
+  const exercisesBySubcategory: { [key: string]: string[] } = {
     // Superiores
-    'Bíceps': [
+    Bíceps: [
       'Rosca Direta com Barra',
       'Rosca Alternada com Halter',
       'Rosca Martelo',
@@ -72,7 +75,7 @@ export const HomeScreen: React.FC = () => {
       'Rosca 21',
       'Rosca Spider',
     ],
-    'Tríceps': [
+    Tríceps: [
       'Tríceps Testa',
       'Tríceps na Polia',
       'Tríceps Francês',
@@ -83,7 +86,7 @@ export const HomeScreen: React.FC = () => {
       'Tríceps Corda',
       'Tríceps Barra',
     ],
-    'Costas': [
+    Costas: [
       'Puxada Frontal',
       'Puxada Triângulo',
       'Remada Curvada',
@@ -97,7 +100,7 @@ export const HomeScreen: React.FC = () => {
       'Puxada Aberta',
       'Remada Baixa',
     ],
-    'Ombro': [
+    Ombro: [
       'Desenvolvimento com Barra',
       'Desenvolvimento com Halter',
       'Elevação Lateral',
@@ -108,7 +111,7 @@ export const HomeScreen: React.FC = () => {
       'Elevação Lateral no Cabo',
       'Arnold Press',
     ],
-    'Antebraço': [
+    Antebraço: [
       'Rosca Punho',
       'Rosca Inversa',
       'Pegada Estática',
@@ -116,7 +119,7 @@ export const HomeScreen: React.FC = () => {
       'Extensão de Punho',
       'Rosca Martelo',
     ],
-    'Peito': [
+    Peito: [
       'Supino Reto',
       'Supino Inclinado',
       'Supino Declinado',
@@ -130,7 +133,7 @@ export const HomeScreen: React.FC = () => {
       'Crucifixo no Cabo',
     ],
     // Inferiores
-    'Quadríceps': [
+    Quadríceps: [
       'Agachamento Livre',
       'Leg Press 45°',
       'Cadeira Extensora',
@@ -142,7 +145,7 @@ export const HomeScreen: React.FC = () => {
       'Leg Press Horizontal',
       'Passada',
     ],
-    'Posterior': [
+    Posterior: [
       'Stiff',
       'Mesa Flexora',
       'Levantamento Terra',
@@ -152,7 +155,7 @@ export const HomeScreen: React.FC = () => {
       'Flexora em Pé',
       'Cadeira Flexora',
     ],
-    'Glúteos': [
+    Glúteos: [
       'Hip Thrust',
       'Agachamento Sumô',
       'Elevação Pélvica',
@@ -163,7 +166,7 @@ export const HomeScreen: React.FC = () => {
       'Stiff',
       'Hip Thrust Unilateral',
     ],
-    'Panturrilha': [
+    Panturrilha: [
       'Panturrilha em Pé',
       'Panturrilha Sentado',
       'Leg Press Panturrilha',
@@ -183,7 +186,7 @@ export const HomeScreen: React.FC = () => {
       'Abdominal Supra',
       'Elevação de Joelhos',
     ],
-    'Lombar': [
+    Lombar: [
       'Extensão Lombar',
       'Superman',
       'Good Morning',
@@ -191,7 +194,7 @@ export const HomeScreen: React.FC = () => {
       'Prancha Lombar',
       'Hiperextensão Inversa',
     ],
-    'Oblíquos': [
+    Oblíquos: [
       'Abdominal Oblíquo',
       'Russian Twist',
       'Prancha Lateral',
@@ -200,7 +203,7 @@ export const HomeScreen: React.FC = () => {
       'Bicicleta',
       'Prancha com Rotação',
     ],
-    'Transverso': [
+    Transverso: [
       'Prancha Frontal',
       'Vacuum',
       'Dead Bug',
@@ -209,7 +212,7 @@ export const HomeScreen: React.FC = () => {
       'Hollow Hold',
     ],
     // Aeróbico
-    'Esteira': [
+    Esteira: [
       'Caminhada',
       'Corrida Leve',
       'Corrida Moderada',
@@ -218,21 +221,21 @@ export const HomeScreen: React.FC = () => {
       'Tiro',
       'Caminhada Inclinada',
     ],
-    'Escada': [
+    Escada: [
       'Subida Moderada',
       'Subida Intensa',
       'Intervalos',
       'Escada Rolante',
       'Step Climber',
     ],
-    'Elíptico': [
+    Elíptico: [
       'Baixa Intensidade',
       'Média Intensidade',
       'Alta Intensidade',
       'Intervalos',
       'Elíptico Reverso',
     ],
-    'Bicicleta': [
+    Bicicleta: [
       'Pedalada Leve',
       'Pedalada Moderada',
       'Pedalada Intensa',
@@ -240,7 +243,7 @@ export const HomeScreen: React.FC = () => {
       'Bike Ergométrica',
       'Intervalos',
     ],
-    'HIIT': [
+    HIIT: [
       'Burpees',
       'Jump Squat',
       'Mountain Climbers',
@@ -261,20 +264,16 @@ export const HomeScreen: React.FC = () => {
   const progressBoxBg = isDark ? '#2a2a2a' : '#f5f5f5';
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Tem certeza que deseja sair?',
-      [
-        {text: 'Cancelar', style: 'cancel'},
-        {
-          text: 'Sair',
-          style: 'destructive',
-          onPress: async () => {
-            await signOut();
-          },
+    Alert.alert('Logout', 'Tem certeza que deseja sair?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Sair',
+        style: 'destructive',
+        onPress: async () => {
+          await signOut();
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const handleCategory = (category: string) => {
@@ -284,7 +283,9 @@ export const HomeScreen: React.FC = () => {
 
   const handleSubcategory = (subcategory: string) => {
     // Toggle expandir/colapsar exercícios da subcategoria
-    setExpandedSubcategory(expandedSubcategory === subcategory ? null : subcategory);
+    setExpandedSubcategory(
+      expandedSubcategory === subcategory ? null : subcategory,
+    );
   };
 
   const handleExerciseToggle = (exercise: string) => {
@@ -308,7 +309,7 @@ export const HomeScreen: React.FC = () => {
     Alert.prompt(
       'Salvar Treino',
       'Digite um nome para o treino:',
-      async (workoutName) => {
+      async workoutName => {
         if (!workoutName || workoutName.trim() === '') {
           Alert.alert('Erro', 'O nome do treino não pode estar vazio');
           return;
@@ -316,8 +317,12 @@ export const HomeScreen: React.FC = () => {
 
         try {
           // Get existing workouts
-          const savedWorkoutsJson = await AsyncStorage.getItem('@saved_workouts');
-          const savedWorkouts = savedWorkoutsJson ? JSON.parse(savedWorkoutsJson) : [];
+          const savedWorkoutsJson = await AsyncStorage.getItem(
+            '@saved_workouts',
+          );
+          const savedWorkouts = savedWorkoutsJson
+            ? JSON.parse(savedWorkoutsJson)
+            : [];
 
           // Create new workout
           const newWorkout = {
@@ -329,7 +334,10 @@ export const HomeScreen: React.FC = () => {
 
           // Save to storage
           const updatedWorkouts = [...savedWorkouts, newWorkout];
-          await AsyncStorage.setItem('@saved_workouts', JSON.stringify(updatedWorkouts));
+          await AsyncStorage.setItem(
+            '@saved_workouts',
+            JSON.stringify(updatedWorkouts),
+          );
 
           Alert.alert('Sucesso', `Treino "${workoutName}" salvo com sucesso!`);
 
@@ -349,7 +357,7 @@ export const HomeScreen: React.FC = () => {
       return;
     }
 
-    navigation.navigate('WorkoutExecution', {exercises: selectedExercises});
+    navigation.navigate('WorkoutExecution', { exercises: selectedExercises });
   };
 
   const handleAddCustomWorkout = () => {
@@ -365,9 +373,7 @@ export const HomeScreen: React.FC = () => {
 
   const handleWorkoutNameChange = (id: string, name: string) => {
     setCustomWorkouts(prev =>
-      prev.map(workout =>
-        workout.id === id ? {...workout, name} : workout
-      )
+      prev.map(workout => (workout.id === id ? { ...workout, name } : workout)),
     );
   };
 
@@ -377,15 +383,16 @@ export const HomeScreen: React.FC = () => {
       prev.map(workout => ({
         ...workout,
         selected: workout.id === id,
-      }))
+      })),
     );
   };
 
   return (
-    <SafeAreaView style={[styles.container, {backgroundColor}]}>
+    <SafeAreaView style={[styles.container, { backgroundColor }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.userSection}>
@@ -395,7 +402,7 @@ export const HomeScreen: React.FC = () => {
               </Text>
             </View>
             <View style={styles.userInfo}>
-              <Text style={[styles.userName, {color: textColor}]}>
+              <Text style={[styles.userName, { color: textColor }]}>
                 {user?.username || 'Usuário'}
               </Text>
               <FlameCounter count={activeDays} theme={theme} />
@@ -404,57 +411,41 @@ export const HomeScreen: React.FC = () => {
 
           {/* Menu Button */}
           <TouchableOpacity
-            style={[styles.menuButton, {backgroundColor: sectionBg}]}
+            style={[styles.menuButton, { backgroundColor: sectionBg }]}
             onPress={() => setMenuVisible(true)}
-            activeOpacity={0.7}>
+            activeOpacity={0.7}
+          >
             <View style={styles.menuIcon}>
-              <View style={[styles.menuLine, {backgroundColor: textColor}]} />
-              <View style={[styles.menuLine, {backgroundColor: textColor}]} />
-              <View style={[styles.menuLine, {backgroundColor: textColor}]} />
+              <View style={[styles.menuLine, { backgroundColor: textColor }]} />
+              <View style={[styles.menuLine, { backgroundColor: textColor }]} />
+              <View style={[styles.menuLine, { backgroundColor: textColor }]} />
             </View>
           </TouchableOpacity>
         </View>
 
-        {/* TESTE: Botões para testar animação */}
-        <View style={[styles.testButtons, {backgroundColor: sectionBg}]}>
-          <Text style={[styles.testLabel, {color: textColor}]}>
-            Testar animação:
-          </Text>
-          <View style={styles.testButtonsRow}>
-            <TouchableOpacity
-              style={[styles.testButton, {backgroundColor: '#007AFF'}]}
-              onPress={() => setTestActiveDays(0)}>
-              <Text style={styles.testButtonText}>0 dias</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.testButton, {backgroundColor: '#007AFF'}]}
-              onPress={() => setTestActiveDays(1)}>
-              <Text style={styles.testButtonText}>1 dia</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.testButton, {backgroundColor: '#007AFF'}]}
-              onPress={() => setTestActiveDays(2)}>
-              <Text style={styles.testButtonText}>2 dias</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.testButton, {backgroundColor: '#007AFF'}]}
-              onPress={() => setTestActiveDays(5)}>
-              <Text style={styles.testButtonText}>5 dias</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* Progress Section */}
-        <View style={[styles.section, {backgroundColor: sectionBg}]}>
-          <Text style={[styles.sectionTitle, {color: textColor, marginTop: 8, marginBottom: 20, textAlign: 'center'}]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: textColor,
+                marginTop: 8,
+                marginBottom: 20,
+                textAlign: 'center',
+              },
+            ]}
+          >
             Seu Progresso, {user?.username || 'Usuário'}
           </Text>
-          <View style={[styles.progressBox, {backgroundColor: progressBoxBg}]}>
+          <View
+            style={[styles.progressBox, { backgroundColor: progressBoxBg }]}
+          >
             <ProgressTimeline
               items={[
-                {label: 'Treinos', value: workoutCount, icon: '💪'},
-                {label: 'Kcal', value: calories, icon: '🔥'},
-                {label: 'Minutos', value: minutes, icon: '⏱️'},
+                { label: 'Treinos', value: workoutCount, icon: '💪' },
+                { label: 'Kcal', value: calories, icon: '🔥' },
+                { label: 'Minutos', value: minutes, icon: '⏱️' },
               ]}
               theme={theme}
             />
@@ -462,14 +453,16 @@ export const HomeScreen: React.FC = () => {
         </View>
 
         {/* Workout Builder Section */}
-        <View style={[styles.section, {backgroundColor: sectionBg}]}>
-          <Text style={[styles.sectionTitle, {color: textColor, fontSize: 20}]}>
+        <View style={[styles.section, { backgroundColor: sectionBg }]}>
+          <Text
+            style={[styles.sectionTitle, { color: textColor, fontSize: 20 }]}
+          >
             Monte seu treino
           </Text>
 
           <View style={styles.categoryHeader}>
             <ExerciseIcon size={28} color="#000000" />
-            <Text style={[styles.categoryTitle, {color: '#000'}]}>
+            <Text style={[styles.categoryTitle, { color: '#000' }]}>
               Categorias
             </Text>
           </View>
@@ -527,38 +520,61 @@ export const HomeScreen: React.FC = () => {
 
             {/* Botão Adicione seu treino */}
             <TouchableOpacity
-              style={[styles.addWorkoutButton, {backgroundColor: isDark ? '#2a2a2a' : '#fff'}]}
+              style={[
+                styles.addWorkoutButton,
+                { backgroundColor: isDark ? '#2a2a2a' : '#fff' },
+              ]}
               onPress={handleAddCustomWorkout}
-              activeOpacity={0.7}>
+              activeOpacity={0.7}
+            >
               <View style={styles.addWorkoutContent}>
-                <View style={[styles.plusCircle, {backgroundColor: '#52A0D8'}]}>
+                <View
+                  style={[styles.plusCircle, { backgroundColor: '#52A0D8' }]}
+                >
                   <Text style={styles.plusIcon}>+</Text>
                 </View>
-                <Text style={[styles.addWorkoutText, {color: textColor}]}>
+                <Text style={[styles.addWorkoutText, { color: textColor }]}>
                   Adicionar exercicio
                 </Text>
               </View>
             </TouchableOpacity>
 
             {/* Lista de treinos customizados */}
-            {customWorkouts.map((workout) => (
-              <View key={workout.id} style={[styles.customWorkoutRow, {backgroundColor: isDark ? '#2a2a2a' : '#fff'}]}>
+            {customWorkouts.map(workout => (
+              <View
+                key={workout.id}
+                style={[
+                  styles.customWorkoutRow,
+                  { backgroundColor: isDark ? '#2a2a2a' : '#fff' },
+                ]}
+              >
                 <TouchableOpacity
                   onPress={() => handleSelectWorkout(workout.id)}
                   activeOpacity={0.7}
-                  style={styles.radioButton}>
-                  <View style={[styles.radioOuter, {borderColor: '#52A0D8'}]}>
+                  style={styles.radioButton}
+                >
+                  <View style={[styles.radioOuter, { borderColor: '#52A0D8' }]}>
                     {workout.selected && (
-                      <View style={[styles.radioInner, {backgroundColor: '#52A0D8'}]} />
+                      <View
+                        style={[
+                          styles.radioInner,
+                          { backgroundColor: '#52A0D8' },
+                        ]}
+                      />
                     )}
                   </View>
                 </TouchableOpacity>
                 <TextInput
-                  style={[styles.workoutInput, {color: textColor, borderColor: isDark ? '#444' : '#ddd'}]}
+                  style={[
+                    styles.workoutInput,
+                    { color: textColor, borderColor: isDark ? '#444' : '#ddd' },
+                  ]}
                   placeholder="Nome do exercicio"
                   placeholderTextColor={isDark ? '#666' : '#999'}
                   value={workout.name}
-                  onChangeText={(text) => handleWorkoutNameChange(workout.id, text)}
+                  onChangeText={text =>
+                    handleWorkoutNameChange(workout.id, text)
+                  }
                 />
               </View>
             ))}
@@ -634,7 +650,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -654,7 +670,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -700,7 +716,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -730,7 +746,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginTop: 12,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -767,7 +783,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     gap: 12,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
