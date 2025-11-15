@@ -14,77 +14,45 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../types/navigation';
-import {useAuth} from '../context/AuthContext';
+import {useAuth} from '../hooks/use-auth';
+import {useFormValidation} from '../hooks/use-form-validation';
+import {useLoadingStore} from '../stores/loading-store';
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
 
 export const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<RegisterScreenNavigationProp>();
   const {signUp} = useAuth();
+  const {errors, validateEmail, validatePassword, validateConfirmPassword, validateUsername, validateName, clearError} = useFormValidation();
+
+  const isSigningUp = useLoadingStore((state) => state.operationLoading.signUp || false);
 
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  function validateForm(): {isValid: boolean; error?: string} {
-    // Basic validations
-    if (!name.trim() || !username.trim() || !email.trim() || !password || !confirmPassword) {
-      return {isValid: false, error: 'Por favor, preencha todos os campos'};
-    }
-
-    if (name.trim().length < 3) {
-      return {isValid: false, error: 'Nome deve ter pelo menos 3 caracteres'};
-    }
-
-    if (username.trim().length < 3) {
-      return {isValid: false, error: 'Nome de usuário deve ter pelo menos 3 caracteres'};
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return {isValid: false, error: 'Email inválido'};
-    }
-
-    // Password strength validation
-    if (password.length < 6) {
-      return {isValid: false, error: 'Senha deve ter pelo menos 6 caracteres'};
-    }
-
-    const hasLetter = /[a-zA-Z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-
-    if (!hasLetter || !hasNumber) {
-      return {isValid: false, error: 'Senha deve conter pelo menos uma letra e um número'};
-    }
-
-    // Password confirmation
-    if (password !== confirmPassword) {
-      return {isValid: false, error: 'As senhas não coincidem'};
-    }
-
-    return {isValid: true};
-  }
 
   async function handleRegister() {
-    const validation = validateForm();
+    if (!name || !username || !email || !password || !confirmPassword) {
+      Alert.alert('Erro', 'Por favor, preencha todos os campos');
+      return;
+    }
 
-    if (!validation.isValid) {
-      Alert.alert('Erro de Validação', validation.error);
+    const nameValid = validateName(name);
+    const usernameValid = validateUsername(username);
+    const emailValid = validateEmail(email);
+    const passwordValid = validatePassword(password, {email, username, name});
+    const confirmPasswordValid = validateConfirmPassword(password, confirmPassword);
+
+    if (!nameValid || !usernameValid || !emailValid || !passwordValid || !confirmPasswordValid) {
       return;
     }
 
     try {
-      setLoading(true);
-      await signUp(name.trim(), username.trim(), email.trim().toLowerCase(), password);
-      // Navigation will happen automatically when user state changes
+      await signUp(name, username, email, password);
     } catch (error) {
       Alert.alert('Erro', error instanceof Error ? error.message : 'Erro ao criar conta');
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -109,74 +77,94 @@ export const RegisterScreen: React.FC = () => {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Nome completo</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, errors.name && styles.inputError]}
                 placeholder="João Silva"
                 placeholderTextColor="#999"
                 value={name}
-                onChangeText={setName}
+                onChangeText={(text) => {
+                  setName(text);
+                  if (errors.name) clearError('name');
+                }}
                 autoCapitalize="words"
-                editable={!loading}
+                editable={!isSigningUp}
               />
+              {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
             </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Nome de usuário</Text>
               <TextInput
-                style={styles.input}
-                placeholder="joao_silva ou João S"
+                style={[styles.input, errors.username && styles.inputError]}
+                placeholder="joao_silva"
                 placeholderTextColor="#999"
                 value={username}
-                onChangeText={setUsername}
+                onChangeText={(text) => {
+                  setUsername(text);
+                  if (errors.username) clearError('username');
+                }}
                 autoCapitalize="none"
-                editable={!loading}
+                editable={!isSigningUp}
               />
+              {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
             </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, errors.email && styles.inputError]}
                 placeholder="seu@email.com"
                 placeholderTextColor="#999"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) clearError('email');
+                }}
                 autoCapitalize="none"
                 keyboardType="email-address"
-                editable={!loading}
+                editable={!isSigningUp}
               />
+              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
             </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Senha</Text>
               <TextInput
-                style={styles.input}
-                placeholder="Mínimo 6 caracteres"
+                style={[styles.input, errors.password && styles.inputError]}
+                placeholder="Mínimo 8 caracteres"
                 placeholderTextColor="#999"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password) clearError('password');
+                }}
                 secureTextEntry
-                editable={!loading}
+                editable={!isSigningUp}
               />
+              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
             </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Confirmar senha</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, errors.confirmPassword && styles.inputError]}
                 placeholder="Digite a senha novamente"
                 placeholderTextColor="#999"
                 value={confirmPassword}
-                onChangeText={setConfirmPassword}
+                onChangeText={(text) => {
+                  setConfirmPassword(text);
+                  if (errors.confirmPassword) clearError('confirmPassword');
+                }}
                 secureTextEntry
-                editable={!loading}
+                editable={!isSigningUp}
               />
+              {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
             </View>
 
             <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
+              style={[styles.button, isSigningUp && styles.buttonDisabled]}
               onPress={handleRegister}
-              disabled={loading}>
-              {loading ? (
+              disabled={isSigningUp}>
+              {isSigningUp ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.buttonText}>Criar Conta</Text>
@@ -189,7 +177,7 @@ export const RegisterScreen: React.FC = () => {
             <Text style={styles.footerText}>Já tem uma conta? </Text>
             <TouchableOpacity
               onPress={() => navigation.goBack()}
-              disabled={loading}>
+              disabled={isSigningUp}>
               <Text style={styles.linkText}>Faça login</Text>
             </TouchableOpacity>
           </View>
@@ -251,6 +239,16 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     borderWidth: 1,
     borderColor: '#e0e0e0',
+  },
+  inputError: {
+    borderColor: '#d32f2f',
+    borderWidth: 1.5,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#d32f2f',
+    marginTop: 4,
+    marginLeft: 4,
   },
   button: {
     backgroundColor: '#007AFF',

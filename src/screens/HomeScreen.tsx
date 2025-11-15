@@ -12,7 +12,8 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useNavigation} from '@react-navigation/native';
 import {RootStackParamList} from '../types/navigation';
-import {useAuth} from '../context/AuthContext';
+import {useAuth} from '../hooks/use-auth';
+import {useUserStore} from '../stores/user-store';
 import {FlameCounter} from '../components/FlameCounter';
 import {ProgressTimeline} from '../components/ProgressTimeline';
 import {CategoryButton} from '../components/CategoryButton';
@@ -32,17 +33,13 @@ export const HomeScreen: React.FC = () => {
   const isDark = theme === 'dark';
 
   const [menuVisible, setMenuVisible] = useState(false);
-  const [testActiveDays, setTestActiveDays] = useState(2);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [expandedSubcategory, setExpandedSubcategory] = useState<string | null>(null);
 
-  // Mock user progress data (will be replaced with real data later)
-  const [workoutCount] = useState(12);
-  const [calories] = useState(2450);
-  const [minutes] = useState(240);
-
-  // Get active days from user - TESTE: usando estado de teste
-  const activeDays = testActiveDays;
+  const activeDays = useUserStore((state) => state.activeDays);
+  const workoutCount = useUserStore((state) => state.workoutCount);
+  const calories = useUserStore((state) => state.calories);
+  const minutes = useUserStore((state) => state.minutes);
 
   // Subcategorias para cada categoria principal
   const categorySubcategories = {
@@ -315,35 +312,6 @@ export const HomeScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* TESTE: Botões para testar animação */}
-        <View style={[styles.testButtons, {backgroundColor: sectionBg}]}>
-          <Text style={[styles.testLabel, {color: textColor}]}>
-            Testar animação:
-          </Text>
-          <View style={styles.testButtonsRow}>
-            <TouchableOpacity
-              style={[styles.testButton, {backgroundColor: '#007AFF'}]}
-              onPress={() => setTestActiveDays(0)}>
-              <Text style={styles.testButtonText}>0 dias</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.testButton, {backgroundColor: '#007AFF'}]}
-              onPress={() => setTestActiveDays(1)}>
-              <Text style={styles.testButtonText}>1 dia</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.testButton, {backgroundColor: '#007AFF'}]}
-              onPress={() => setTestActiveDays(2)}>
-              <Text style={styles.testButtonText}>2 dias</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.testButton, {backgroundColor: '#007AFF'}]}
-              onPress={() => setTestActiveDays(5)}>
-              <Text style={styles.testButtonText}>5 dias</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* Progress Section */}
         <View style={[styles.section, {backgroundColor: sectionBg}]}>
           <Text style={[styles.sectionTitle, {color: textColor}]}>
@@ -544,35 +512,5 @@ const styles = StyleSheet.create({
   },
   categories: {
     gap: 0,
-  },
-  testButtons: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  testLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  testButtonsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  testButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  testButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
   },
 });

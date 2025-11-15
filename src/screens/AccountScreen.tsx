@@ -11,7 +11,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useNavigation} from '@react-navigation/native';
 import {RootStackParamList} from '../types/navigation';
-import {useAuth} from '../context/AuthContext';
+import {useAuth} from '../hooks/use-auth';
 import {DeleteIcon} from '../components/DeleteIcon';
 
 type AccountScreenNavigationProp = NativeStackNavigationProp<
