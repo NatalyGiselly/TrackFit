@@ -12,6 +12,7 @@ import {RegisterScreen} from '../screens/RegisterScreen';
 import {ForgotPasswordScreen} from '../screens/ForgotPasswordScreen';
 import {HomeScreen} from '../screens/HomeScreen';
 import {AccountScreen} from '../screens/AccountScreen';
+import {WorkoutExecutionScreen} from '../screens/WorkoutExecutionScreen';
 import {SplashScreen} from '../screens/SplashScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -41,6 +42,13 @@ export const AppNavigator: React.FC = () => {
               component={AccountScreen}
               options={{
                 animation: 'slide_from_right',
+              }}
+            />
+            <Stack.Screen
+              name="WorkoutExecution"
+              component={WorkoutExecutionScreen}
+              options={{
+                animation: 'slide_from_bottom',
               }}
             />
           </Stack.Navigator>

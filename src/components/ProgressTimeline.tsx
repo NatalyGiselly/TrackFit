@@ -20,7 +20,7 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
   const textColor = isDark ? '#fff' : '#1a1a1a';
   const labelColor = isDark ? '#aaa' : '#666';
   const lineColor = isDark ? '#333' : '#e0e0e0';
-  const dotColor = isDark ? '#52BE29' : '#007AFF';
+  const dotColor = isDark ? '#87CEEB' : '#6BB6D9';
 
   return (
     <View style={styles.container}>

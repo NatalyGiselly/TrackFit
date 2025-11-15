@@ -18,6 +18,8 @@ import {ProgressTimeline} from '../components/ProgressTimeline';
 import {CategoryButton} from '../components/CategoryButton';
 import {MenuModal} from '../components/MenuModal';
 import {ExerciseIcon} from '../components/ExerciseIcon';
+import {FloatingActionBar} from '../components/FloatingActionBar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -35,6 +37,7 @@ export const HomeScreen: React.FC = () => {
   const [testActiveDays, setTestActiveDays] = useState(2);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [expandedSubcategory, setExpandedSubcategory] = useState<string | null>(null);
+  const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
 
   // Mock user progress data (will be replaced with real data later)
   const [workoutCount] = useState(12);
@@ -281,6 +284,71 @@ export const HomeScreen: React.FC = () => {
     setExpandedSubcategory(expandedSubcategory === subcategory ? null : subcategory);
   };
 
+  const handleExerciseToggle = (exercise: string) => {
+    console.log('🎯 Toggle exercise:', exercise);
+    setSelectedExercises(prev => {
+      const newList = prev.includes(exercise)
+        ? prev.filter(ex => ex !== exercise)
+        : [...prev, exercise];
+      console.log('📝 Selected exercises:', newList);
+      console.log('🔢 Count:', newList.length);
+      return newList;
+    });
+  };
+
+  const handleSaveWorkout = () => {
+    if (selectedExercises.length === 0) {
+      Alert.alert('Atenção', 'Selecione pelo menos um exercício');
+      return;
+    }
+
+    Alert.prompt(
+      'Salvar Treino',
+      'Digite um nome para o treino:',
+      async (workoutName) => {
+        if (!workoutName || workoutName.trim() === '') {
+          Alert.alert('Erro', 'O nome do treino não pode estar vazio');
+          return;
+        }
+
+        try {
+          // Get existing workouts
+          const savedWorkoutsJson = await AsyncStorage.getItem('@saved_workouts');
+          const savedWorkouts = savedWorkoutsJson ? JSON.parse(savedWorkoutsJson) : [];
+
+          // Create new workout
+          const newWorkout = {
+            id: Date.now().toString(),
+            name: workoutName.trim(),
+            exercises: selectedExercises,
+            createdAt: new Date().toISOString(),
+          };
+
+          // Save to storage
+          const updatedWorkouts = [...savedWorkouts, newWorkout];
+          await AsyncStorage.setItem('@saved_workouts', JSON.stringify(updatedWorkouts));
+
+          Alert.alert('Sucesso', `Treino "${workoutName}" salvo com sucesso!`);
+
+          // Clear selection
+          setSelectedExercises([]);
+        } catch (error) {
+          console.error('Error saving workout:', error);
+          Alert.alert('Erro', 'Não foi possível salvar o treino');
+        }
+      },
+    );
+  };
+
+  const handleStartWorkout = () => {
+    if (selectedExercises.length === 0) {
+      Alert.alert('Atenção', 'Selecione pelo menos um exercício');
+      return;
+    }
+
+    navigation.navigate('WorkoutExecution', {exercises: selectedExercises});
+  };
+
   return (
     <SafeAreaView style={[styles.container, {backgroundColor}]}>
       <ScrollView
@@ -368,9 +436,7 @@ export const HomeScreen: React.FC = () => {
           </Text>
 
           <View style={styles.categoryHeader}>
-            <View style={styles.categoryIcon}>
-              <ExerciseIcon size={28} color="#000000" />
-            </View>
+            <ExerciseIcon size={28} color="#000000" />
             <Text style={[styles.categoryTitle, {color: '#000'}]}>
               Categorias
             </Text>
@@ -386,6 +452,8 @@ export const HomeScreen: React.FC = () => {
               onSubcategoryPress={handleSubcategory}
               exercisesBySubcategory={exercisesBySubcategory}
               expandedSubcategory={expandedSubcategory}
+              selectedExercises={selectedExercises}
+              onExerciseToggle={handleExerciseToggle}
             />
             <CategoryButton
               label="Inferiores"
@@ -396,6 +464,8 @@ export const HomeScreen: React.FC = () => {
               onSubcategoryPress={handleSubcategory}
               exercisesBySubcategory={exercisesBySubcategory}
               expandedSubcategory={expandedSubcategory}
+              selectedExercises={selectedExercises}
+              onExerciseToggle={handleExerciseToggle}
             />
             <CategoryButton
               label="Core"
@@ -406,6 +476,8 @@ export const HomeScreen: React.FC = () => {
               onSubcategoryPress={handleSubcategory}
               exercisesBySubcategory={exercisesBySubcategory}
               expandedSubcategory={expandedSubcategory}
+              selectedExercises={selectedExercises}
+              onExerciseToggle={handleExerciseToggle}
             />
             <CategoryButton
               label="Aeróbico"
@@ -417,6 +489,8 @@ export const HomeScreen: React.FC = () => {
               useCircleIcon={true}
               exercisesBySubcategory={exercisesBySubcategory}
               expandedSubcategory={expandedSubcategory}
+              selectedExercises={selectedExercises}
+              onExerciseToggle={handleExerciseToggle}
             />
           </View>
         </View>
@@ -430,6 +504,14 @@ export const HomeScreen: React.FC = () => {
         onWorkouts={() => Alert.alert('Treinos', 'Em desenvolvimento')}
         onSubscription={() => Alert.alert('Assinatura', 'Em desenvolvimento')}
         onLogout={handleLogout}
+        theme={theme}
+      />
+
+      {/* Floating Action Bar */}
+      <FloatingActionBar
+        visible={selectedExercises.length > 0}
+        onSave={handleSaveWorkout}
+        onStart={handleStartWorkout}
         theme={theme}
       />
     </SafeAreaView>
@@ -458,7 +540,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#52BE29',
+    backgroundColor: '#87CEEB',
     justifyContent: 'center',
     alignItems: 'center',
   },

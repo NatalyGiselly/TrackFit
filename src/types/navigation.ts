@@ -4,4 +4,5 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   Home: undefined;
   Account: undefined;
+  WorkoutExecution: {exercises: string[]};
 };

@@ -30,6 +30,8 @@ interface CategoryButtonProps {
   useCircleIcon?: boolean;
   exercisesBySubcategory?: {[key: string]: string[]};
   expandedSubcategory?: string | null;
+  selectedExercises?: string[];
+  onExerciseToggle?: (exercise: string) => void;
 }
 
 export const CategoryButton: React.FC<CategoryButtonProps> = ({
@@ -42,6 +44,8 @@ export const CategoryButton: React.FC<CategoryButtonProps> = ({
   useCircleIcon = false,
   exercisesBySubcategory = {},
   expandedSubcategory = null,
+  selectedExercises = [],
+  onExerciseToggle,
 }) => {
   const isDark = theme === 'dark';
   const backgroundColor = isDark ? '#2a2a2a' : '#fff';
@@ -104,14 +108,25 @@ export const CategoryButton: React.FC<CategoryButtonProps> = ({
                 {/* Exercise List */}
                 {isSubExpanded && exercises.length > 0 && (
                   <View style={styles.exercisesContainer}>
-                    {exercises.map((exercise, exIndex) => (
-                      <View key={exIndex} style={styles.exerciseRow}>
-                        <CheckboxIcon size={24} color="#000000" />
-                        <Text style={[styles.exerciseLabel, {color: textColor}]}>
-                          {exercise}
-                        </Text>
-                      </View>
-                    ))}
+                    {exercises.map((exercise, exIndex) => {
+                      const isChecked = selectedExercises.includes(exercise);
+                      return (
+                        <TouchableOpacity
+                          key={exIndex}
+                          style={styles.exerciseRow}
+                          onPress={() => onExerciseToggle?.(exercise)}
+                          activeOpacity={0.7}>
+                          <CheckboxIcon
+                            size={24}
+                            color="#000000"
+                            checked={isChecked}
+                          />
+                          <Text style={[styles.exerciseLabel, {color: textColor}]}>
+                            {exercise}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 )}
               </View>
