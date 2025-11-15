@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,8 @@ import { ProgressTimeline } from '../components/ProgressTimeline';
 import { CategoryButton } from '../components/CategoryButton';
 import { MenuModal } from '../components/MenuModal';
 import { ExerciseIcon } from '../components/ExerciseIcon';
+import { CheckboxIcon } from '../components/CheckboxIcon';
+import { MuscleSearchIcon } from '../components/MuscleSearchIcon';
 import { FloatingActionBar } from '../components/FloatingActionBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -47,6 +49,8 @@ export const HomeScreen: React.FC = () => {
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(
     null,
   );
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const activeDays = useUserStore(state => state.activeDays);
   const workoutCount = useUserStore(state => state.workoutCount);
@@ -300,6 +304,33 @@ export const HomeScreen: React.FC = () => {
     });
   };
 
+  // Função para remover acentos
+  const removeAccents = (str: string) => {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  };
+
+  // Memoizar exercícios filtrados para performance
+  const filteredExercises = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return [];
+    }
+
+    const query = removeAccents(searchQuery.toLowerCase().trim());
+    const filtered: Array<{ exercise: string; subcategory: string }> = [];
+
+    // Percorrer todos os exercícios de todas as subcategorias
+    Object.entries(exercisesBySubcategory).forEach(([subcategory, exercises]) => {
+      exercises.forEach(exercise => {
+        const normalizedExercise = removeAccents(exercise.toLowerCase());
+        if (normalizedExercise.includes(query)) {
+          filtered.push({ exercise, subcategory });
+        }
+      });
+    });
+
+    return filtered;
+  }, [searchQuery]);
+
   const handleSaveWorkout = () => {
     if (selectedExercises.length === 0) {
       Alert.alert('Atenção', 'Selecione pelo menos um exercício');
@@ -459,6 +490,96 @@ export const HomeScreen: React.FC = () => {
           >
             Monte seu treino
           </Text>
+
+          {/* Botão de busca */}
+          <View style={styles.searchButtonContainer}>
+            <TouchableOpacity
+              onPress={() => setSearchVisible(!searchVisible)}
+              activeOpacity={0.7}
+              style={styles.searchButton}
+            >
+              <MuscleSearchIcon size={28} color={textColor} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Campo de busca */}
+          {searchVisible && (
+            <View style={styles.searchContainer}>
+              <TextInput
+                style={[
+                  styles.searchInput,
+                  {
+                    color: textColor,
+                    borderColor: isDark ? '#444' : '#ddd',
+                    backgroundColor: isDark ? '#1a1a1a' : '#f5f5f5',
+                  },
+                ]}
+                placeholder="Pesquisar exercícios..."
+                placeholderTextColor={isDark ? '#666' : '#999'}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus
+              />
+            </View>
+          )}
+
+          {/* Resultados da busca */}
+          {searchVisible && searchQuery.trim() !== '' && (
+            <View style={styles.searchResultsContainer}>
+              {filteredExercises.length > 0 ? (
+                <>
+                  <Text style={[styles.searchResultsTitle, { color: textColor }]}>
+                    {filteredExercises.length} resultado(s) encontrado(s)
+                  </Text>
+                  {filteredExercises.map((item) => (
+                    <TouchableOpacity
+                      key={`${item.subcategory}-${item.exercise}`}
+                      style={[
+                        styles.searchResultItem,
+                        {
+                          backgroundColor: isDark ? '#2a2a2a' : '#f5f5f5',
+                        },
+                      ]}
+                      onPress={() => handleExerciseToggle(item.exercise)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.searchResultContent}>
+                        <CheckboxIcon
+                          size={20}
+                          color={textColor}
+                          checked={selectedExercises.includes(item.exercise)}
+                        />
+                        <View style={styles.searchResultTextContainer}>
+                          <Text
+                            style={[
+                              styles.searchResultExercise,
+                              { color: textColor },
+                            ]}
+                          >
+                            {item.exercise}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.searchResultSubcategory,
+                              { color: subtitleColor },
+                            ]}
+                          >
+                            {item.subcategory}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </>
+              ) : (
+                <Text
+                  style={[styles.searchNoResults, { color: subtitleColor }]}
+                >
+                  Nenhum exercício encontrado
+                </Text>
+              )}
+            </View>
+          )}
 
           <View style={styles.categoryHeader}>
             <ExerciseIcon size={28} color="#000000" />
@@ -678,6 +799,59 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
+    textAlign: 'center',
+  },
+  searchButtonContainer: {
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  searchButton: {
+    padding: 8,
+  },
+  searchContainer: {
+    marginBottom: 16,
+  },
+  searchInput: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  searchResultsContainer: {
+    marginBottom: 16,
+  },
+  searchResultsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  searchResultItem: {
+    borderRadius: 12,
+    marginBottom: 8,
+    padding: 12,
+  },
+  searchResultContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  searchResultTextContainer: {
+    flex: 1,
+  },
+  searchResultExercise: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  searchResultSubcategory: {
+    fontSize: 12,
+  },
+  searchNoResults: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginVertical: 20,
   },
   progressBox: {
     borderRadius: 12,
@@ -691,6 +865,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
+    marginTop: 24,
     marginBottom: 16,
   },
   categoryIcon: {

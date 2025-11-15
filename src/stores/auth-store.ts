@@ -7,6 +7,7 @@ type AuthState = {
   user: User | null;
   isAuthenticated: boolean;
   isInitializing: boolean;
+  initStartTime: number;
 };
 
 type AuthActions = {
@@ -24,6 +25,7 @@ export const useAuthStore = create<AuthStore>()(
       user: null,
       isAuthenticated: false,
       isInitializing: true,
+      initStartTime: Date.now(),
 
       setUser: (user) => {
         set({
@@ -40,6 +42,16 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       initialize: async () => {
+        const MIN_SPLASH_DURATION = 1000; // 1 segundo
+        const startTime = get().initStartTime;
+        const elapsed = Date.now() - startTime;
+
+        // Se passou menos de 1 segundo, aguardar o tempo restante
+        if (elapsed < MIN_SPLASH_DURATION) {
+          const remainingTime = MIN_SPLASH_DURATION - elapsed;
+          await new Promise(resolve => setTimeout(resolve, remainingTime));
+        }
+
         set({ isInitializing: false });
       },
 

@@ -10,6 +10,9 @@ import {RegisterScreen} from '../screens/RegisterScreen';
 import {ForgotPasswordScreen} from '../screens/ForgotPasswordScreen';
 import {HomeScreen} from '../screens/HomeScreen';
 import {AccountScreen} from '../screens/AccountScreen';
+import {SettingsScreen} from '../screens/SettingsScreen';
+import {LegalScreen} from '../screens/LegalScreen';
+import {ManageAccountScreen} from '../screens/ManageAccountScreen';
 import {WorkoutExecutionScreen} from '../screens/WorkoutExecutionScreen';
 import {SplashScreen} from '../screens/SplashScreen';
 
@@ -36,6 +39,27 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen
               name="Account"
               component={AccountScreen}
+              options={{
+                animation: 'slide_from_right',
+              }}
+            />
+            <Stack.Screen
+              name="Settings"
+              component={SettingsScreen}
+              options={{
+                animation: 'slide_from_right',
+              }}
+            />
+            <Stack.Screen
+              name="Legal"
+              component={LegalScreen}
+              options={{
+                animation: 'slide_from_right',
+              }}
+            />
+            <Stack.Screen
+              name="ManageAccount"
+              component={ManageAccountScreen}
               options={{
                 animation: 'slide_from_right',
               }}
